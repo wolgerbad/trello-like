@@ -9,7 +9,6 @@ export default function Home() {
       </h2>
       <div className="flex flex-wrap gap-6">
         <BoardList />
-        <CreateBoard />
       </div>
     </div>
   );

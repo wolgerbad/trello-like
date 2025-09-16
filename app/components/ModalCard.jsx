@@ -7,9 +7,14 @@ import { useCardContext } from './CardContext';
 export default function ModalCard({ selectedCard, setSelectedCard, onClose }) {
   const [isEditingCardName, setIsEditingCardName] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
-  const [tempCardName, setTempCardName] = useState(() => selectedCard);
+  const [tempCardName, setTempCardName] = useState(() => selectedCard.content);
+  const [tempDescription, setTempDescription] = useState(
+    () => selectedCard.description
+  );
 
   const { columns, setColumns } = useCardContext();
+
+  console.log(tempCardName, tempDescription);
 
   function handleDelete() {
     setColumns((columns) =>
@@ -17,24 +22,25 @@ export default function ModalCard({ selectedCard, setSelectedCard, onClose }) {
         return {
           id: column.id,
           columnName: column.columnName,
-          cards: column.cards.filter((card) => card !== selectedCard),
+          cards: column.cards.filter((card) => card.id !== selectedCard.id),
         };
       })
     );
+    setSelectedCard(null);
   }
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && tempCardName) {
-        onClose(tempCardName);
+        onClose(tempCardName, tempDescription);
       }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [tempCardName]);
+  }, [tempCardName, tempDescription]);
 
   return (
-    <div className="fixed w-screen h-screen flex justify-center items-center bg-black/30 backdrop-blur-sm z-10000 top-0 left-0 ">
+    <div className="fixed w-screen h-screen flex justify-center items-center bg-black/30 backdrop-blur-sm z-10000 top-0 left-0 cursor-default">
       <div className="w-[60rem] min-h-[22rem] bg-gray-100 p-4">
         <div className="flex justify-between gap-12">
           <div className="w-2/3">
@@ -73,13 +79,15 @@ export default function ModalCard({ selectedCard, setSelectedCard, onClose }) {
                   rows={5}
                   autoFocus
                   onBlur={() => setIsEditingDescription(false)}
+                  value={tempDescription}
+                  onChange={(e) => setTempDescription(e.target.value)}
                 />
               ) : (
                 <div
-                  className="ml-7 w-full bg-gray-300 p-2 transition-[height] ease duration-1000"
+                  className="ml-7 w-full h-10 bg-gray-300 p-2 transition-[height] ease duration-1000"
                   onClick={() => setIsEditingDescription(true)}
                 >
-                  Whatever tf is the description
+                  {tempDescription}
                 </div>
               )}
             </div>
