@@ -1,168 +1,162 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { startTransition, useEffect, useOptimistic, useState } from 'react';
 import { FaPlus, FaTrash } from 'react-icons/fa';
-import { useCardContext } from './CardContext';
 import Button from './Button';
 import ModalCard from './ModalCard';
-import { Droppable, Draggable } from '@hello-pangea/dnd';
+import { addNewCard, deleteColumn, updateColumn } from '../lib/actions';
+import KanbanCard from './KanbanCard';
+import CardList from './CardList';
 
-export default function KanbanColumn({ columnName, cards, id }) {
-  const { columns, setColumns } = useCardContext();
+export default function KanbanColumn({ column, cards, handleColumns }) {
+  const [optimisticCards, handleOptimisticCards] = useOptimistic(
+    cards,
+    (state, action) => {
+      switch (action.type) {
+        case 'add':
+          return [...state, action.payload];
+
+        case 'delete':
+          return state.filter((c) => c.id !== action.payload);
+
+        case 'edit':
+          return state.map((c) =>
+            c.id === action.payload.id
+              ? {
+                  ...c,
+                  content: action.payload.content,
+                  description: action.payload.description,
+                }
+              : c
+          );
+      }
+    }
+  );
+  console.log('optcards:', optimisticCards);
+
+  const { name: columnName, id: columnId, board_id: boardId } = column;
+
+  const [clientColumnName, setClientColumnName] = useState(() => columnName);
+  const [cardContent, setCardContent] = useState('');
 
   const [isEditing, setIsEditing] = useState(false);
-  const [isAddingTodo, setIsAddingTodo] = useState(false);
-  const [selectedCard, setSelectedCard] = useState(null);
+  const [isAddingCard, setIsAddingCard] = useState(false);
 
-  function handleChange(e) {
-    setColumns((columns) =>
-      columns.map((column) =>
-        column.columnName === columnName
-          ? { columnName: e.target.value, cards: column.cards, id: column.id }
-          : column
-      )
-    );
+  async function handleColumnBlur() {
+    setIsEditing(false);
+
+    if (columnName !== clientColumnName && clientColumnName.length > 0)
+      await updateColumn({
+        id: columnId,
+        newColumnName: clientColumnName,
+        boardId,
+      });
+    else console.log('huuh');
   }
 
-  function handleAddCard(formData) {
-    const cardContent = formData.get('card');
+  async function handleAddCard() {
+    const randomId = Math.floor(Math.random() * 10000);
     const newCard = {
-      id: `card-${Date.now()}`,
+      id: randomId,
       content: cardContent,
+      description: '',
+      column_id: columnId,
+      board_id: boardId,
     };
-    setColumns((columns) =>
-      columns.map((column) =>
-        column.columnName === columnName
-          ? { ...column, cards: [...column.cards, newCard] }
-          : column
-      )
-    );
 
-    setIsAddingTodo(false);
+    if (!cardContent) {
+      setIsAddingCard(false);
+      return;
+    }
+
+    handleOptimisticCards({ type: 'add', payload: newCard });
+    setIsAddingCard(false);
+    setCardContent('');
+    await addNewCard(newCard, boardId);
   }
 
-  function handleDelete() {
-    setColumns((columns) =>
-      columns.filter((column) => column.columnName !== columnName)
-    );
-  }
-
-  function handleBlur(e) {
-    if (!e.target.value) setIsAddingTodo(false);
-  }
-
-  function handleModalClose(cardName, cardDescription) {
-    console.log(selectedCard, cardName);
-    setColumns((columns) =>
-      columns.map((column) => {
-        return {
-          id: column.id,
-          columnName: column.columnName,
-          cards: column.cards.map((card) =>
-            card.id === selectedCard.id
-              ? { ...card, content: cardName, description: cardDescription }
-              : card
-          ),
-        };
-      })
-    );
-    setSelectedCard(null);
+  async function handleDelete() {
+    handleColumns({ type: 'delete', payload: columnId });
+    await deleteColumn({ id: columnId, boardId });
   }
 
   return (
     <>
-      <Droppable droppableId={columnName}>
-        {(provided, snapshot) => (
-          <div
-            ref={provided.innerRef}
-            {...provided.droppableProps}
-            className={`bg-gray-200 w-[20rem] h-fit flex flex-col gap-4 rounded-sm p-2 cursor-move ${
-              snapshot.isDraggingOver ? 'bg-gray-300' : ''
-            }`}
-          >
-            <div className="flex justify-between items-center gap-2">
-              <div className="w-full">
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={columnName}
-                    onChange={handleChange}
-                    onBlur={() => setIsEditing(false)}
-                    spellCheck="false"
-                    autoFocus
-                    className="text-black border-none outline-none px-2 py-1 w-full"
-                  />
-                ) : (
-                  <span className="px-2" onClick={() => setIsEditing(true)}>
-                    {columnName}
-                  </span>
-                )}
-              </div>
-              <span
-                onClick={handleDelete}
-                className="bg-gray-300 hover:bg-gray-400  text-gray-700 cursor-pointer rounded-md p-2"
-              >
-                <FaTrash />
-              </span>
-            </div>
-            {cards?.map((card, index) => (
-              <Draggable key={card.id} draggableId={card.id} index={index}>
-                {(provided, snapshot) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.draggableProps}
-                    {...provided.dragHandleProps}
-                    className={`bg-white border-1 border-black px-2 py-1 hover:bg-gray-100 cursor-pointer ${
-                      snapshot.isDragging ? 'shadow-lg' : ''
-                    }`}
-                    onClick={() => setSelectedCard(card)}
-                  >
-                    {card.content}
-                  </div>
-                )}
-              </Draggable>
-            ))}
-            {provided.placeholder}
-            {isAddingTodo ? (
-              <form action={handleAddCard} className="flex flex-col gap-1">
-                <textarea
-                  name="card"
-                  placeholder="Enter a title for this card.."
-                  className="p-2"
-                  autoFocus
-                  onBlur={handleBlur}
-                  cols={5}
-                  rows={3}
-                />
-                <span className="flex gap-1 items-center">
-                  <Button type="add">Add card</Button>
-                  <Button type="delete" onClick={() => setIsAddingTodo(false)}>
-                    <FaTrash />
-                  </Button>
-                </span>
-              </form>
+      <div className="bg-gray-200 w-[20rem] h-fit flex flex-col gap-4 rounded-sm p-2 cursor-move">
+        <div className="flex justify-between items-center gap-2">
+          <div className="w-full">
+            {isEditing ? (
+              <input
+                type="text"
+                value={clientColumnName}
+                onChange={(e) =>
+                  startTransition(() => setClientColumnName(e.target.value))
+                }
+                onBlur={handleColumnBlur}
+                spellCheck="false"
+                autoFocus
+                className="text-black border-none outline-none px-2 py-1 w-full"
+              />
             ) : (
-              <button
-                onClick={() => setIsAddingTodo(true)}
-                className="text-gray-700 hover:bg-gray-300 px-2 py-1"
-              >
-                <span className="flex items-center gap-0.5">
-                  <FaPlus />
-                  Add a card
-                </span>
-              </button>
+              <span className="px-2" onClick={() => setIsEditing(true)}>
+                {clientColumnName}
+              </span>
             )}
           </div>
-        )}
-      </Droppable>
-      {selectedCard && (
-        <ModalCard
-          selectedCard={selectedCard}
-          setSelectedCard={setSelectedCard}
-          columnName={columnName}
-          onClose={handleModalClose}
+          <button
+            onClick={handleDelete}
+            className="bg-gray-300 hover:bg-gray-400  text-gray-700 cursor-pointer rounded-md p-2"
+          >
+            <FaTrash />
+          </button>
+        </div>
+        <CardList
+          cards={optimisticCards}
+          columnId={columnId}
+          handleOptimisticCards={handleOptimisticCards}
         />
-      )}
+
+        {isAddingCard ? (
+          <div className="flex flex-col gap-1">
+            <textarea
+              value={cardContent}
+              onChange={(e) => setCardContent(e.target.value)}
+              placeholder="Enter a title for this card.."
+              className="p-2"
+              autoFocus
+              cols={5}
+              rows={3}
+            />
+            <span className="flex gap-1 items-center">
+              <button
+                onClick={handleAddCard}
+                className="px-2 py-1 rounded-sm font-medium transition-colors bg-sky-700 hover:bg-sky-800 text-white"
+              >
+                Add card
+              </button>
+              <Button
+                type="delete"
+                onClick={() => {
+                  setCardContent('');
+                  setIsAddingCard(false);
+                }}
+              >
+                <FaTrash />
+              </Button>
+            </span>
+          </div>
+        ) : (
+          <button
+            onClick={() => setIsAddingCard(true)}
+            className="text-gray-700 hover:bg-gray-300 px-2 py-1 "
+          >
+            <span className="flex items-center gap-0.5">
+              <FaPlus />
+              Add a card
+            </span>
+          </button>
+        )}
+      </div>
     </>
   );
 }

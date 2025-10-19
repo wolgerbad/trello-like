@@ -1,21 +1,42 @@
 'use client';
 
-import { useState } from 'react';
+import { startTransition, useOptimistic, useState } from 'react';
 import { FaTrash } from 'react-icons/fa';
 import { useCardContext } from './CardContext';
+import { deleteBoard, updateBoard } from '../lib/actions';
+import { usePathname, useRouter } from 'next/navigation';
+import { useOptimisticContext } from './OptimisticContextProvider';
 
-export default function Header({ id }) {
+export default function Header({ board }) {
+  const router = useRouter();
+  const boardId = +usePathname().slice(1);
+
+  const { handleOptimisticBoards } = useOptimisticContext();
+
+  const [optimisticBoardName, setOptimisticBoardName] = useOptimistic(
+    board.name,
+    (state, newBoardName) => newBoardName
+  );
+
   const [isEditing, setIsEditing] = useState(false);
-  const { boardList, setBoardList } = useCardContext();
+  const [clientBoardName, setClientBoardName] = useState(
+    () => optimisticBoardName
+  );
 
-  const boardName = boardList.find((board) => board.id === id).boardName;
+  async function handleBoard() {
+    setIsEditing(false);
+    if (clientBoardName === optimisticBoardName || !clientBoardName) return;
+    setOptimisticBoardName(clientBoardName);
+    await updateBoard({ id: boardId, newBoardName: clientBoardName });
+  }
 
-  function handleBoard(e) {
-    setBoardList((boardList) =>
-      boardList.map((board) =>
-        board.id === id ? { ...board, boardName: e.target.value } : board
-      )
-    );
+  async function handleDelete() {
+    router.push('/');
+    startTransition(() => {
+      handleOptimisticBoards({ type: 'delete', payload: boardId });
+    });
+    await deleteBoard(boardId);
+    router.refresh();
   }
 
   return (
@@ -23,24 +44,27 @@ export default function Header({ id }) {
       {isEditing ? (
         <input
           type="text"
-          value={boardName}
-          onChange={handleBoard}
-          onBlur={() => setIsEditing(false)}
+          value={clientBoardName}
+          onChange={(e) => setClientBoardName(e.target.value)}
+          onBlur={handleBoard}
           spellCheck="false"
           autoFocus
           className="text-black border-none outline-none px-4 py-2 max-w-60"
         />
       ) : (
         <span
-          className="bg-blue-300 px-4 py-2 min-w-60 min-h-10"
+          className="bg-sky-400 hover:bg-sky-500 px-4 py-2 min-w-60 min-h-10 rounded-md cursor-pointer"
           onClick={() => setIsEditing(true)}
         >
-          {boardName}
+          {optimisticBoardName}
         </span>
       )}
-      <span className="bg-blue-300 flex items-center px-3 py-1 rounded-sm min-h-10 cursor-pointer">
+      <button
+        className="bg-sky-400 hover:bg-sky-500 rounded-md flex items-center px-3 py-1 min-h-10 cursor-pointer"
+        onClick={handleDelete}
+      >
         <FaTrash />
-      </span>
+      </button>
     </header>
   );
 }

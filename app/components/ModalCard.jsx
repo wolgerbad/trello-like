@@ -1,67 +1,89 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { startTransition, useEffect, useState } from 'react';
 import { FaEdit, FaList, FaTrash } from 'react-icons/fa';
-import { useCardContext } from './CardContext';
+import { deleteCard, updateCard } from '../lib/actions';
+import { useRouter } from 'next/navigation';
+import { IoClose } from 'react-icons/io5';
 
-export default function ModalCard({ selectedCard, setSelectedCard, onClose }) {
-  const [isEditingCardName, setIsEditingCardName] = useState(false);
+export default function ModalCard({
+  card,
+  setIsActive,
+  handleOptimisticCards,
+}) {
+  const router = useRouter();
+
+  const [isEditingCardContent, setIsEditingCardContent] = useState(false);
   const [isEditingDescription, setIsEditingDescription] = useState(false);
-  const [tempCardName, setTempCardName] = useState(() => selectedCard.content);
-  const [tempDescription, setTempDescription] = useState(
-    () => selectedCard.description
+  const [clientCardContent, setClientCardContent] = useState(
+    () => card.content
+  );
+  const [clientCardDescription, setClientCardDescription] = useState(
+    () => card.description
   );
 
-  const { columns, setColumns } = useCardContext();
+  async function handleEdit() {
+    if (
+      clientCardContent !== card.content ||
+      clientCardDescription !== card.description
+    )
+      startTransition(async () => {
+        handleOptimisticCards({
+          type: 'edit',
+          payload: {
+            id: card.id,
+            content: clientCardContent,
+            description: clientCardDescription,
+          },
+        });
+        await updateCard(card.id, {
+          content: clientCardContent,
+          description: clientCardDescription,
+        });
 
-  console.log(tempCardName, tempDescription);
-
-  function handleDelete() {
-    setColumns((columns) =>
-      columns.map((column) => {
-        return {
-          id: column.id,
-          columnName: column.columnName,
-          cards: column.cards.filter((card) => card.id !== selectedCard.id),
-        };
-      })
-    );
-    setSelectedCard(null);
+        router.refresh();
+      });
   }
 
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && tempCardName) {
-        onClose(tempCardName, tempDescription);
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [tempCardName, tempDescription]);
+  async function handleDelete() {
+    startTransition(async () => {
+      setIsActive(false);
+      handleOptimisticCards({ type: 'delete', payload: card.id });
+      await deleteCard(card.id);
+      router.refresh();
+    });
+  }
 
   return (
     <div className="fixed w-screen h-screen flex justify-center items-center bg-black/30 backdrop-blur-sm z-10000 top-0 left-0 cursor-default">
       <div className="w-[60rem] min-h-[22rem] bg-gray-100 p-4">
-        <div className="flex justify-between gap-12">
+        <div className="flex justify-between gap-12 relative">
+          <IoClose
+            className="absolute top-0 right-0 text-xl cursor-pointer"
+            onClick={() => setIsActive(false)}
+          />
           <div className="w-2/3">
             <div className="mb-8">
               <div className="flex items-center gap-2">
                 <FaEdit />
-                {isEditingCardName ? (
+                {isEditingCardContent ? (
                   <input
                     type="text"
                     className="outline-blue-500 p-1"
-                    value={tempCardName}
-                    onChange={(e) => setTempCardName(e.target.value)}
+                    value={clientCardContent}
+                    onChange={(e) => setClientCardContent(e.target.value)}
                     autoFocus
-                    onBlur={() => setIsEditingCardName(false)}
+                    onBlur={async () => {
+                      setIsEditingCardContent(false);
+                      await handleEdit();
+                    }}
                   />
                 ) : (
                   <span
                     className="p-1"
-                    onClick={() => setIsEditingCardName(true)}
+                    onClick={() => setIsEditingCardContent(true)}
                   >
-                    {tempCardName}
+                    {clientCardContent}
                   </span>
                 )}
               </div>
@@ -78,16 +100,19 @@ export default function ModalCard({ selectedCard, setSelectedCard, onClose }) {
                   className="ml-7 p-1 w-full outline-blue-600 transition-[height] ease duration-1000"
                   rows={5}
                   autoFocus
-                  onBlur={() => setIsEditingDescription(false)}
-                  value={tempDescription}
-                  onChange={(e) => setTempDescription(e.target.value)}
+                  onBlur={async () => {
+                    setIsEditingDescription(false);
+                    await handleEdit();
+                  }}
+                  value={clientCardDescription}
+                  onChange={(e) => setClientCardDescription(e.target.value)}
                 />
               ) : (
                 <div
                   className="ml-7 w-full h-10 bg-gray-300 p-2 transition-[height] ease duration-1000"
                   onClick={() => setIsEditingDescription(true)}
                 >
-                  {tempDescription}
+                  {clientCardDescription}
                 </div>
               )}
             </div>

@@ -1,34 +1,30 @@
 'use client';
 
-import { useCardContext } from './CardContext';
 import BoardOverview from './BoardOverview';
 import ModalAddBoard from './ModalAddBoard';
 import { useState } from 'react';
 import CreateBoard from './CreateBoard';
+import { useOptimisticContext } from './OptimisticContextProvider';
+import { addNewBoard } from '../lib/actions';
 
-export default function KanbanList() {
+export default function BoardList({ userId }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { boardList, setBoardList } = useCardContext();
+  const { optimisticBoards, handleOptimisticBoards } = useOptimisticContext();
 
-  function handleCreate(formData) {
-    const title = formData.get('title');
-    if (!title) return;
-    setBoardList((boardList) => [
-      ...boardList,
-      { boardName: title, id: Date.now() },
-    ]);
-    setIsModalOpen(false);
+  async function handleCreate(boardName) {
+    const randomId = Math.floor(Math.random() * 10000);
+    const newBoard = { name: boardName, user_id: userId, id: randomId };
+    if (!boardName) return;
+    handleOptimisticBoards({ type: 'add', payload: newBoard });
+
+    await addNewBoard(newBoard);
   }
 
   return (
     <>
-      {boardList.map((board) => (
-        <BoardOverview
-          key={board.id}
-          href={`/${board.id}`}
-          name={board.boardName}
-        />
+      {optimisticBoards?.map((board) => (
+        <BoardOverview key={board.id} href={`/${board.id}`} name={board.name} />
       ))}
       <CreateBoard setIsModalOpen={setIsModalOpen} />
       {isModalOpen && (

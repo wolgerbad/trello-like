@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function ModalAddBoard({ setIsModalOpen, onCreate }) {
+  const [boardName, setBoardName] = useState('');
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
@@ -15,20 +16,25 @@ export default function ModalAddBoard({ setIsModalOpen, onCreate }) {
 
   return (
     <div className="fixed top-0 left-0 flex justify-center w-screen h-screen bg-black/30 backdrop-blur-sm ">
-      <form
-        action={onCreate}
-        className="bg-blue-500 w-64 h-20 p-2 rounded-sm mt-20"
-      >
+      <div className="bg-blue-500 w-64 h-20 p-2 rounded-sm mt-20">
         <input
           type="text"
-          name="title"
+          value={boardName}
+          onChange={(e) => setBoardName(e.target.value)}
           placeholder="Add board title"
           className="bg-blue-500 mb-2 hover:bg-blue-300 focus:bg-blue-300 text-gray-900 font-semibold"
         />
-        <button className="px-2 py-1 bg-green-500 text-white text-center">
+        <button
+          className="px-2 py-1 bg-green-500 text-white text-center"
+          onClick={async () => {
+            setIsModalOpen(false);
+            setBoardName('');
+            await onCreate(boardName);
+          }}
+        >
           Create Board
         </button>
-      </form>
+      </div>
     </div>
   );
 }
