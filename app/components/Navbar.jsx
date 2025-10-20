@@ -11,12 +11,14 @@ export default function Navbar({ user }) {
       <Link
         className="text-white bg-sky-500 hover:bg-opacity-50 p-1.5 rounded-sm text-xl"
         href="/"
+        prefetch
       >
         <FaHome />
       </Link>
       <Link
         className="text-blue-200 tracking-wider font-semibold text-lg"
         href="/"
+        prefetch
       >
         TrelloLike
       </Link>
@@ -28,6 +30,7 @@ export default function Navbar({ user }) {
         <Link
           className="text-white bg-sky-500 hover:bg-opacity-50 p-1.5 rounded-sm text-xl"
           href="/login"
+          prefetch
         >
           <FaSignInAlt />
         </Link>
