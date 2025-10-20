@@ -50,6 +50,7 @@ export default function SignUpClient() {
             className="border-2 border-gray-900 w-full px-2 py-0.5"
           />
         </div>
+        {error && <p className="text-red-800 text-sm w-80">{error}</p>}
         <div className="self-end mb-4">
           <SignUpButton />
         </div>

@@ -1,5 +1,6 @@
 'use client';
 
+import { useDroppable } from '@dnd-kit/core';
 import KanbanCard from './KanbanCard';
 
 export default function CardList({
@@ -9,7 +10,7 @@ export default function CardList({
   setSelectedCard,
 }) {
   return (
-    <>
+    <div className="flex flex-col gap-2">
       {cards?.map((card, index) =>
         card.column_id === columnId ? (
           <KanbanCard
@@ -20,6 +21,6 @@ export default function CardList({
           />
         ) : null
       )}
-    </>
+    </div>
   );
 }

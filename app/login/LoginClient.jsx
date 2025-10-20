@@ -12,6 +12,7 @@ export default function LoginClient() {
   const router = useRouter();
 
   async function handleLogin(formData) {
+    setError('');
     const email = formData.get('email');
     const password = formData.get('password');
 
@@ -21,7 +22,10 @@ export default function LoginClient() {
   }
 
   return (
-    <div className="m-10 max-w-60">
+    <div className="m-10 max-w-72">
+      <h1 className="bg-neutral-200 p-2 text-gray-700 rounded-lg mb-4">
+        ⚠️ This is a beta version. Some functions may not work as expected.
+      </h1>
       <form className="flex flex-col gap-2" action={handleLogin}>
         <div>
           <label className="block">Email:</label>
@@ -40,6 +44,7 @@ export default function LoginClient() {
             className="border-2 border-gray-900 w-full px-2 py-0.5"
           />
         </div>
+        {error && <p className="text-red-800 text-sm max-w-80">{error}</p>}
         <div className="self-end mb-8">
           <LoginButton />
         </div>
@@ -48,12 +53,6 @@ export default function LoginClient() {
         Have no account?{' '}
         <Link href="/signup" className="underline decoration-blue-500">
           Sign Up!
-        </Link>
-      </div>
-      <div className="flex justify-between">
-        Forgot your password?{' '}
-        <Link href="reset" className="underline decoration-blue-500">
-          Reset it
         </Link>
       </div>
     </div>

@@ -22,6 +22,7 @@ export default async function KanbanPage({ params }) {
   const cards = await getCards(id);
 
   if (!board) redirect('/');
+  if (!session?.user) redirect('/login');
 
   return (
     <div className="min-h-screen min-w-screen bg-sky-600 p-4">

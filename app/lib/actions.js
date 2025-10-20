@@ -22,15 +22,18 @@ export async function signIn(email, password) {
 }
 
 export async function signUp(name, email, password) {
-  const result = await auth.api.signUpEmail({
-    body: {
-      name,
-      email,
-      password,
-    },
-  });
-
-  return result;
+  try {
+    const result = await auth.api.signUpEmail({
+      body: {
+        name,
+        email,
+        password,
+      },
+    });
+    return result;
+  } catch (error) {
+    return error.message;
+  }
 }
 
 export async function signOut() {
@@ -115,4 +118,6 @@ export async function updateCard(id, updatedCard) {
     .update(updatedCard)
     .eq('id', id)
     .select();
+
+  revalidatePath('/');
 }

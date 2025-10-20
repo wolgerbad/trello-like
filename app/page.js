@@ -16,7 +16,7 @@ export default async function Home() {
   return (
     <div className="flex flex-col mt-20 max-w-[60rem] mx-auto">
       <h2 className="uppercase font-semibold text-gray-700 mb-8">
-        {session?.user?.name}'s Boards
+        {session?.user?.name}&apos;s Boards
       </h2>
       <div className="flex flex-wrap gap-6">
         <BoardList boards={boards} userId={userId} />
