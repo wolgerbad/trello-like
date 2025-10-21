@@ -6,9 +6,28 @@ import KanbanColumn from './KanbanColumn';
 import { useCardContext } from './CardContext';
 import { addNewColumn, updateCard } from '../lib/actions';
 import { usePathname } from 'next/navigation';
-import { DndContext } from '@dnd-kit/core';
+import {
+  DndContext,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
 
 export default function KanbanList({ columns, cards, boards }) {
+  const touchSensor = useSensor(TouchSensor, {
+    activationConstraint: {
+      delay: 250,
+      tolerance: 5,
+    },
+  });
+  const mouseSensor = useSensor(MouseSensor, {
+    activationConstraint: {
+      distance: 10,
+    },
+  });
+
+  const sensors = useSensors(touchSensor, mouseSensor);
   const pathname = +usePathname().slice('1');
 
   const [listName, setListName] = useState('');
@@ -106,7 +125,7 @@ export default function KanbanList({ columns, cards, boards }) {
 
   return (
     <div className="flex flex-wrap gap-2 mt-2">
-      <DndContext onDragEnd={handleDragEnd}>
+      <DndContext onDragEnd={handleDragEnd} sensors={sensors}>
         {optimisticColumns?.map((column) => (
           <KanbanColumn
             key={column.id}

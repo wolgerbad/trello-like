@@ -70,7 +70,10 @@ export default function KanbanColumn({
   const { setNodeRef } = useDroppable({ id: column.id });
 
   return (
-    <div className="bg-gray-200 w-[20rem] h-fit flex flex-col gap-4 rounded-sm p-2 cursor-move">
+    <div
+      className="bg-gray-200 w-[20rem] h-fit flex flex-col gap-4 rounded-sm p-2 cursor-move"
+      ref={setNodeRef}
+    >
       <div className="flex justify-between items-center gap-2">
         <div className="w-full">
           {isEditing ? (
@@ -98,7 +101,7 @@ export default function KanbanColumn({
           <FaTrash />
         </button>
       </div>
-      <div ref={setNodeRef}>
+      <div>
         <CardList
           cards={optimisticCards}
           columnId={columnId}
